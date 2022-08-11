@@ -24,12 +24,10 @@ layout1 = [[sg.Radio('Windows', "RADIO1", enable_events=True, default=True, key=
 layout2 = [[sg.Checkbox('*.jpg', default=True, key="_IN1_")], [sg.Checkbox('*.png', default=False, key="_IN2_")],
            [sg.Checkbox('*.tiff', default=False, key="_IN3_")]]
 
-layout3 = [[sg.Text('     Time processing in:', size=(19, 1), font=('Arial', 9, 'bold'))],
-           [sg.Radio('Seconds', "RADIO2", enable_events=True, default=True, key='_TSE_'),
-            sg.Radio('Minutes', "RADIO2", enable_events=True, key='_TMI_')],
-           [sg.Text('Filter parameter:', size=(12, 1)), sg.InputText('41', key='_IDI_', size=(5, 1))],
+layout3 = [[sg.Text('Filter parameter:', size=(12, 1)), sg.InputText('41', key='_IDI_', size=(7, 1))],
            [sg.Text('Image resolution:', size=(12, 1)), sg.Combo(l_res, size=(5, 1), default_value='100x', key='_RES_'),
-            sg.Text('', size=(1, 1))]]
+            sg.Text('', size=(1, 1))],
+           [sg.Checkbox('Save Processed Images', default=True, enable_events=True, key='_SIM_')]]
 
 layout4 = [[sg.Text('Name Outfile: ', size=(12, 1)), sg.InputText('Experiment1_', size=(28, 1), key='_NAM_')],
            [sg.Text('Path Images: ', size=(12, 1)), sg.InputText(size=(35, 1), key='_ORI_'), sg.FolderBrowse()],
@@ -78,11 +76,12 @@ layout = [[sg.Column(col_1), sg.Column(col_2)]]
 window = sg.Window('Spheres Interface', layout, font="Helvetica "+str(Screen_size), finalize=True)
 # ----------------------------------------------------------------------------------
 time_, id_image, time_h, time_l, fluid_h, fluid_l, port_name, bauds_, c_port, i = 0, 0, 0, 0, 0, 0, 0, 0, -1, 0
-start_, save_, pump_, control, finish_, pause_ = False, False, False, True, False, False
+start_, save_, pump_, control, finish_, pause_ = False, True, False, True, False, False
 video, name, image, ini_time, ini_time_, path_des, type_i, path_ori = None, None, None, None, None, None, None, None
 saveIm, pumpC, filenames, id_sys, h_filter, name_file, conv_value = None, None, [], 0, 41, None, 0
 m1, n1 = 450, 400
-results = pd.DataFrame(columns=['Image', 'Sphere', 'Radius (um)', 'Area (um2)', 'Time (sec)'])
+results = pd.DataFrame(columns=['Image', 'Sphere', 'Radius (um)', 'Detected Area (um2)', 'Percentage Area',
+                                'Image Area (um2)', 'Time (sec)'])
 # ----------------------------------------------------------------------------------
 img = np.ones((m1, n1, 1), np.uint8)*255
 sphere = Sp.SphereImages(window, m1, n1)
@@ -117,6 +116,9 @@ while True:
             start_ = True
             pause_ = False
 
+    if event == '_SIM_':
+        save_ = values['_SIM_']
+
     if event == 'Start':
         print('START ANALYSIS')
         now_time = now.strftime("%H : %M : %S")
@@ -132,10 +134,7 @@ while True:
             path_des = values['_DES_'] + '/'
             id_sys = 1
         # -------------------------------------------------------------------
-        if values['_TMI_']:
-            window['_IDE_'].update('min')
-        else:
-            window['_IDE_'].update('sec')
+        window['_IDE_'].update('sec')
         # -------------------------------------------------------------------
         if values['_IN2_']:
             type_i = ".png"
@@ -159,11 +158,14 @@ while True:
     if start_:
         filenames, image_, filename, total_i = sphere.load_image_i(path_ori, i, type_i, filenames, id_sys)
         window['_CIM_'].update(total_i)
+
         if len(image_) == 0 and total_i == 0:
             finish_ = True
             sg.Popup('Error', ['No images in directory. '])
+        elif i == total_i:
+            finish_ = True
+            continue
         else:
-            print(conv_value)
             window['_CUR_'].update(i+1)
             window['_CIM_'].update(total_i)
             window['_NIM_'].update(filename)
@@ -174,6 +176,9 @@ while True:
                                                                                                         h_filter,
                                                                                                         results,
                                                                                                         conv_value)
+            if save_:
+                sphere.save_image_out(image_out, path_des, filename)
+
             window['_TAR_'].update(a_total)
             window['_DAR_'].update(a_detected)
             window['_PAR_'].update(percentage)
