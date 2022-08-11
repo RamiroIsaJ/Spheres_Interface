@@ -4,6 +4,7 @@ import time
 import glob
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from skimage import morphology
 from skimage.filters import threshold_otsu
 
@@ -11,12 +12,11 @@ from skimage.filters import threshold_otsu
 class SphereImages:
     def __init__(self, window_, m, n):
         self.window = window_
-        self.m = m
-        self.n = n
+        self.m, self.n = m, n
         self.area, self.condition = 0, 0
         self.path_f, self.markers = None, None
         self.symbol, self.blurred = None, None
-        self.contours, self.root_result = [], None
+        self.contours, self.root_file, self.root_ima = [], None, None
 
     def bytes_(self, img_):
         ima = cv2.resize(img_, (self.m, self.n))
@@ -120,31 +120,33 @@ class SphereImages:
         toc = np.round(time.time() - tic, 2)
         print(f'Time processing    : {toc} sec.')
         print(f'Number of spheres  : {len(radius_)}')
-        area_total = np.round((img_.shape[0] * img_.shape[1]) / conv_value, 2)
+        area_total = np.round(((img_.shape[0] / conv_value) * (img_.shape[1] / conv_value)), 2)
         area_detected = 0
         n_spheres = len(radius_)
         for i in range(n_spheres):
             area_detected += area_[i]
+            per = np.round(((area_[i]* 100) / area_total), 2)
             print(f' *** Cell No. {i + 1} ----> Radio: {radius_[i]} ----> Internal Area: {area_[i]}')
             # save results
             new_row = pd.DataFrame.from_records([{'Image': ide_ima, 'Sphere': i+1, 'Radius (um)': radius_[i],
-                                                 'Area (um2)': area_[i], 'Time (sec)': toc}])
+                                                 'Detected Area (um2)': area_[i], 'Percentage Area': per,
+                                                  'Image Area (um2)': area_total, 'Time (sec)': toc}])
             results = pd.concat([results, new_row], ignore_index=True)
 
-        percentage = np.round((area_detected / area_total) * 100, 2)
+        area_detected = np.round(area_detected, 2)
+        percentage = np.round(((area_detected*100) / area_total), 2)
 
         return ima_out, results, area_total, area_detected, percentage, n_spheres, toc
 
+    def save_image_out(self, ima_out_, path_des, name_ima):
+        self.root_ima = os.path.join(path_des, name_ima)
+        cv2.imwrite(self.root_ima, ima_out_)
+        print('..... Image saved successfully .....')
+
     def save_csv_file(self, results, path_des, name_file):
         # Save data in csv file
-        self.root_result = os.path.join(path_des, name_file + '.csv')
-        results.to_csv(self.root_result, index=False)
+        self.root_file = os.path.join(path_des, name_file + '.csv')
+        results.to_csv(self.root_file, index=False)
         print('----------------------------------------------')
         print('..... Save data in CSV file successfully .....')
         print('----------------------------------------------')
-
-
-
-
-
-
