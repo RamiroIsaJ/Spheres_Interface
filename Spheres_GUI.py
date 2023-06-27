@@ -80,7 +80,7 @@ start_, save_, pump_, control, finish_, pause_ = False, True, False, True, False
 video, name, image, ini_time, ini_time_, path_des, type_i, path_ori = None, None, None, None, None, None, None, None
 saveIm, pumpC, filenames, id_sys, h_filter, name_file, conv_value = None, None, [], 0, 41, None, 0
 m1, n1 = 450, 400
-results = pd.DataFrame(columns=['Image', 'Sphere', 'Radius (um)', 'Detected Area (um2)', 'Percentage Area',
+results = pd.DataFrame(columns=['Image', 'Sphere', 'Detected Area (um2)', 'Percentage Area',
                                 'Image Area (um2)', 'Time (sec)'])
 # ----------------------------------------------------------------------------------
 img = np.ones((m1, n1, 1), np.uint8)*255
