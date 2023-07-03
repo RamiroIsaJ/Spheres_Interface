@@ -15,8 +15,8 @@ from datetime import datetime
 Screen_size = 10
 # -------------------------------
 sg.theme('LightGrey1')
-l_res = ['100x', '90x', '60x', '40x', '20x', '10x']
-l_conv = [15.50, 13.95, 9.30, 6.21, 3.10, 1.55]
+l_res = ['100x', '90x', '60x', '40x', '20x', '10x', '4x']
+l_conv = [15.50, 13.95, 9.30, 6.21, 3.10, 1.55, 1.09]
 
 layout1 = [[sg.Radio('Windows', "RADIO1", enable_events=True, default=True, key='_SYS_')],
            [sg.Radio('Linux', "RADIO1", enable_events=True, key='_LIN_')], [sg.Text('')]]
