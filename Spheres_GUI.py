@@ -6,7 +6,7 @@ import time
 import numpy as np
 import pandas as pd
 import PySimpleGUI as sg
-import Sphere_def as Sp
+import Sphere_def2 as Sp
 from datetime import datetime
 
 # -------------------------------
@@ -17,7 +17,6 @@ Screen_size = 10
 sg.theme('LightGrey1')
 l_res = ['100x', '90x', '60x', '40x', '20x', '10x', '4x']
 l_conv = [15.50, 13.95, 9.30, 6.21, 3.10, 1.55, 1.09]
-
 layout1 = [[sg.Radio('Windows', "RADIO1", enable_events=True, default=True, key='_SYS_')],
            [sg.Radio('Linux', "RADIO1", enable_events=True, key='_LIN_')], [sg.Text('')]]
 
@@ -85,6 +84,7 @@ results = pd.DataFrame(columns=['Image', 'Sphere', 'Detected Area (um2)', 'Perce
 # ----------------------------------------------------------------------------------
 img = np.ones((m1, n1, 1), np.uint8)*255
 sphere = Sp.SphereImages(window, m1, n1)
+sphere.build_filters()
 window['_IMA_'].update(data=sphere.bytes_(img))
 # -----------------------------------------------------------------------------------
 
