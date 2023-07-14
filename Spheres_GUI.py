@@ -6,7 +6,7 @@ import time
 import numpy as np
 import pandas as pd
 import PySimpleGUI as sg
-import Sphere_def2 as Sp
+import Sphere_def as Sp
 from datetime import datetime
 
 # -------------------------------
