@@ -8,6 +8,7 @@ from skimage import morphology
 from skimage.filters import threshold_otsu
 
 
+
 class SphereImages:
     def __init__(self, window_, m, n):
         self.window = window_
@@ -66,13 +67,15 @@ class SphereImages:
 
     def calculate_contour(self, img):
         contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        self.big_contour = []
+        self.big_contour, areas_c = [], []
         for c in contours:
-            if cv2.contourArea(c) > 100:
+            if cv2.contourArea(c) > 300:
                 self.big_contour.append(c)
+                areas_c.append(cv2.contourArea(c))
+        return np.array(areas_c)
 
     def p_circle(self, binary_):
-        self.calculate_contour(binary_)
+        _ = self.calculate_contour(binary_)
         contour = sorted(self.big_contour, key=cv2.contourArea, reverse=True)
         (x_, y_), radius_ = cv2.minEnclosingCircle(contour[0])
         return int(x_), int(y_), int(radius_)
@@ -119,29 +122,48 @@ class SphereImages:
             percentage_ = np.round((total_detected / total_well) * 100, 3)
             roi_ima = np.zeros_like(binary, dtype=np.uint8)
             roi_ima[vals_] = binary[vals_]
-            self.calculate_contour(roi_ima)
+            _ = self.calculate_contour(roi_ima)
             image_r_ = np.copy(img_)
             for c in self.big_contour:
                 area_ = cv2.contourArea(c)
                 if area_ > 250:
                     cv2.drawContours(image_r_, c, -1, (0, 0, 255), 3)
             cv2.circle(image_r_, (x_1, y_), radius_1, (255, 0, 0), 3)
+            rel1, rel2 = radius_1 / image_r_.shape[0], radius_1 / image_r_.shape[1]
+            if rel1 < 0.40 and rel2 < 0.40:
+                percentage_, image_r_ = -1, 0
         else:
             percentage_, image_r_ = -1, 0
         return image_r_, percentage_, area_/conv_value_, total_well/conv_value_
 
+    def verify_regions(self, binary_):
+        total_ = binary_.shape[0] * binary_.shape[1]
+        num_ones = np.sum(binary_.flatten() == 1)
+        return np.round((num_ones / total_), 2)
+
     def binary_ima1(self, gabor_img_):
-        binary = np.array(gabor_img_ <= 70).astype(np.uint8)
+        thresh1 = threshold_otsu(gabor_img_)
+        val_max = 70 if thresh1 <= 77 else 80
+        val_iter = 2 if thresh1 <= 77 else 3
+        binary = np.array(gabor_img_ <= val_max).astype(np.uint8)
+        relation_ = self.verify_regions(binary)
+        if relation_ >= 0.62:
+            binary = np.array(gabor_img_ <= 90).astype(np.uint8)
+            binary = 1 - binary
+        areas_contours = self.calculate_contour(binary)
+        min_area, max_area = int(2.0*np.min(areas_contours)), np.max(areas_contours)
+        min_area = 800 if max_area < 700 else 1000
+        max_area = 7000
         # Morphological operations
         arr = binary > 0
         binary = morphology.remove_small_objects(arr, min_size=10, connectivity=1).astype(np.uint8)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        binary = cv2.morphologyEx(binary, cv2.MORPH_DILATE, kernel, iterations=2)
+        binary = cv2.morphologyEx(binary, cv2.MORPH_DILATE, kernel, iterations=int(val_iter))
         kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
         binary = cv2.morphologyEx(binary, cv2.MORPH_ERODE, kernel, iterations=2)
         arr = binary > 0
-        markers = morphology.remove_small_objects(arr, min_size=700, connectivity=1).astype(np.uint8)
-        markers = morphology.remove_small_holes(markers.astype(np.bool_), area_threshold=7000, connectivity=1)
+        markers = morphology.remove_small_objects(arr, min_size=min_area, connectivity=1).astype(np.uint8)
+        markers = morphology.remove_small_holes(markers.astype(np.bool_), area_threshold=int(max_area), connectivity=1)
         self.markers = markers.astype(np.uint8)
 
     def binary_ima2(self, thresh_, h_param_):
@@ -199,8 +221,9 @@ class SphereImages:
         gabor_img = self.apply_gabor()
         ima_out, percentage, area_, area_total = self.well_ima(img_, gabor_img, conv_value)
         thresh = threshold_otsu(self.blurred)
+        print(percentage, thresh, threshold_otsu(gabor_img))
         if percentage < 0:
-            if thresh <= 128 or thresh == 140:
+            if threshold_otsu(gabor_img) >= 73 and thresh <= 128:
                 self.binary_ima1(gabor_img)
             else:
                 self.binary_ima2(thresh, h_param)
