@@ -9,6 +9,7 @@ from skimage.filters import threshold_otsu
 
 
 
+
 class SphereImages:
     def __init__(self, window_, m, n):
         self.window = window_
@@ -66,7 +67,7 @@ class SphereImages:
         return np.sqrt(np.sum((xp - yp) ** 2))
 
     def calculate_contour(self, img):
-        contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.big_contour, areas_c = [], []
         for c in contours:
             if cv2.contourArea(c) > 300:
@@ -134,7 +135,7 @@ class SphereImages:
                 percentage_, image_r_ = -1, 0
         else:
             percentage_, image_r_ = -1, 0
-        return image_r_, percentage_, area_/conv_value_, total_well/conv_value_
+        return image_r_, percentage_, area_/conv_value_**2, total_well/conv_value_**2
 
     def verify_regions(self, binary_):
         total_ = binary_.shape[0] * binary_.shape[1]
@@ -143,7 +144,7 @@ class SphereImages:
 
     def binary_ima1(self, gabor_img_):
         thresh1 = threshold_otsu(gabor_img_)
-        val_max = 70 if thresh1 <= 77 else 80
+        val_max = 70 if thresh1 <= 77 else 78
         val_iter = 2 if thresh1 <= 77 else 3
         binary = np.array(gabor_img_ <= val_max).astype(np.uint8)
         relation_ = self.verify_regions(binary)
@@ -167,7 +168,8 @@ class SphereImages:
         self.markers = markers.astype(np.uint8)
 
     def binary_ima2(self, thresh_, h_param_):
-        param = 8 if thresh_ < 145 else 5
+        param = 7 if thresh_ > 145 else 10
+        print(thresh_)
         binary = cv2.adaptiveThreshold(self.blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                        cv2.THRESH_BINARY_INV, h_param_, param)
         # Morphological operations
@@ -198,6 +200,7 @@ class SphereImages:
         area_ref = np.round(img_.shape[0] * img_.shape[1] * 0.25, 2)
         area_total_ = np.round(((img_.shape[0] / conv_value_) * (img_.shape[1] / conv_value_)), 2)
         area_a, ide = [], 1
+        print(len(self.contours))
         for c in self.contours:
             area = cv2.contourArea(c)
             if area > 250:
@@ -210,7 +213,7 @@ class SphereImages:
                         cv2.circle(img_out, (x_, y_), radius_, (35, 255, 12), 3)
                         cx, cy = int(x_ - 5), int(y_ - radius_)
                         cv2.putText(img_out, str(ide), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2, cv2.LINE_AA)
-                        area_a.append(area / conv_value_)
+                        area_a.append(area / conv_value_**2)
                         ide += 1
         return img_out, area_total_, area_a
 
@@ -221,7 +224,6 @@ class SphereImages:
         gabor_img = self.apply_gabor()
         ima_out, percentage, area_, area_total = self.well_ima(img_, gabor_img, conv_value)
         thresh = threshold_otsu(self.blurred)
-        print(percentage, thresh, threshold_otsu(gabor_img))
         if percentage < 0:
             if threshold_otsu(gabor_img) >= 73 and thresh <= 128:
                 self.binary_ima1(gabor_img)
@@ -237,12 +239,18 @@ class SphereImages:
                 per = np.round(((area_[i] * 100) / area_total), 2)
                 print(f' *** Cell No. {i + 1} ----> Internal Area: {area_[i]}')
                 # save results
-                new_row = pd.DataFrame.from_records([{'Image': ide_ima, 'Sphere': i+1, 'Detected Area (um2)': area_[i],
-                                                      'Percentage Area': per, 'Image Area (um2)': area_total,
-                                                      'Time (sec)': toc}])
-                results = pd.concat([results, new_row], ignore_index=True)
+                # new_row = pd.DataFrame.from_records([{'Image': ide_ima, 'Sphere': i+1, 'Detected Area (um2)': area_[i],
+                #                                      'Percentage Area': per, 'Image Area (um2)': area_total,
+                #                                      'Time (sec)': toc}])
+                # results = pd.concat([results, new_row], ignore_index=True)
             area_detected = np.round(area_detected, 2)
             percentage = np.round(((area_detected * 100) / area_total), 2)
+            print(f' *** Total area detected ----> {area_detected}')
+            # save results
+            new_row = pd.DataFrame.from_records([{'Image': ide_ima, 'Sphere': n_spheres,
+                                                  'Detected Area (um2)': area_detected, 'Percentage Area': percentage,
+                                                  'Image Area (um2)': area_total, 'Time (sec)': toc}])
+            results = pd.concat([results, new_row], ignore_index=True)
         else:
             n_spheres, area_detected = 1, np.copy(area_)
             toc = np.round(time.time() - tic, 2)
