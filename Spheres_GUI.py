@@ -16,16 +16,17 @@ Screen_size = 10
 # -------------------------------
 sg.theme('LightGrey1')
 l_res = ['100x', '90x', '60x', '40x', '20x', '10x', '4x']
-l_conv = [15.50, 13.95, 9.30, 6.21, 3.10, 1.55, 1.09]
+# l_conv = [15.50, 13.95, 9.30, 16.0, 3.10, 1.55, 1.09]
 layout1 = [[sg.Radio('Windows', "RADIO1", enable_events=True, default=True, key='_SYS_')],
            [sg.Radio('Linux', "RADIO1", enable_events=True, key='_LIN_')], [sg.Text('')]]
 
 layout2 = [[sg.Checkbox('*.jpg', default=True, key="_IN1_")], [sg.Checkbox('*.png', default=False, key="_IN2_")],
            [sg.Checkbox('*.tiff', default=False, key="_IN3_")]]
 
-layout3 = [[sg.Text('Filter parameter:', size=(12, 1)), sg.InputText('41', key='_IDI_', size=(7, 1))],
-           [sg.Text('Image resolution:', size=(12, 1)), sg.Combo(l_res, size=(5, 1), default_value='100x', key='_RES_'),
+layout3 = [[sg.Text('Filter parameter:', size=(13, 1)), sg.InputText('41', key='_IDI_', size=(7, 1))],
+           [sg.Text('Image resolution:', size=(13, 1)), sg.Combo(l_res, size=(5, 1), default_value='100x', key='_RES_'),
             sg.Text('', size=(1, 1))],
+           [sg.Text('Conversion factor:', size=(13, 1)), sg.InputText('4', key='_CON_', size=(7, 1))],
            [sg.Checkbox('Save Processed Images', default=True, enable_events=True, key='_SIM_')]]
 
 layout4 = [[sg.Text('Name Outfile: ', size=(12, 1)), sg.InputText('Experiment1_', size=(28, 1), key='_NAM_')],
@@ -147,8 +148,9 @@ while True:
             start_ = True
             ini_time = datetime.now()
             name_file = values['_NAM_']
-            index = l_res.index(values['_RES_'])
-            conv_value = l_conv[index]
+            # index = l_res.index(values['_RES_'])
+            # conv_value = l_conv[index]
+            conv_value = int(values['_CON_'])
             h_filter = int(values['_IDI_'])
         elif len(path_ori) > 1 and len(path_des) > 1 and start_:
             sg.Popup('Warning', ['Analysis is running...'])
@@ -172,7 +174,7 @@ while True:
             window['_MES_'].update(' ... IMAGE PROCESSING .... ')
             print('|-------------------------------------------------------|')
             print('Processing image: ... ' + str(i+1) + ' of ' + str(total_i))
-            image_out, results, a_total, a_detected, percentage, n_spheres, time_p = sphere.sphere_main(image_, i,
+            image_out, results, a_total, a_detected, percentage, n_spheres, time_p = sphere.sphere_main(image_, filename,
                                                                                                         h_filter,
                                                                                                         results,
                                                                                                         conv_value)
