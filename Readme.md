@@ -4,6 +4,6 @@
 * The region area is computed using contours detection.
 * Results are presented in the CSV file, once the analysis has finished.
 
-This is a test version 0.2.3
+This is a test version 1.5.4
 
 ![image info](./src/interface.png)
