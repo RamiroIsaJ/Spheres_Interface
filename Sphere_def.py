@@ -210,7 +210,7 @@ class SphereImages:
                     area_c = np.round(np.pi * radius_ ** 2)
                     if area_c < area_ref:
                         cv2.drawContours(img_out, c, -1, (0, 0, 255), 3)
-                        cv2.circle(img_out, (x_, y_), radius_, (35, 255, 12), 3)
+                        # cv2.circle(img_out, (x_, y_), radius_, (35, 255, 12), 3)
                         cx, cy = int(x_ - 5), int(y_ - radius_)
                         cv2.putText(img_out, str(ide), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2, cv2.LINE_AA)
                         area_a.append(area / conv_value_**2)
